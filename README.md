@@ -12,7 +12,7 @@
 
 ---
 
-## 我只想拿資料
+## 如果只想拿資料
 
 所有交付檔都在 [`data/processed/`](data/processed/)：
 
