@@ -58,7 +58,9 @@ towns <- merge(towns, subset(panel, year == 2025), by = "towncode")  # 例：接
 | `asmr_heart` | 心臟疾病（高血壓性疾病除外）年齡標準化死亡率，**主要分析變數**（= asmr_adj） | 每十萬人口 | panel_long; town_mean; gpkg/shp |
 | `asmr_raw` | 原發布年齡標準化死亡率（未經 108 年準則轉換） | 每十萬人口 | panel_long; town_mean; gpkg/shp |
 | `asmr_adj` | 經轉換比值調整後年齡標準化死亡率 | 每十萬人口 | panel_long |
-| `cmr_heart` | 心臟疾病粗死亡率（自行計算） | 每十萬人口 | panel_long; town_mean; gpkg/shp |
+| `cmr_heart` | 心臟疾病粗死亡率（自行計算，**未經** 108 年準則轉換） | 每十萬人口 | panel_long; town_mean; gpkg/shp |
+| `cmr_adj` | 經轉換比值調整後心臟疾病粗死亡率 | 每十萬人口 | panel_long; town_mean; gpkg/shp |
+| `rule_chg` | 死因選取準則虛擬變數：0 = 舊準則（105–107）、1 = WHO 2016 版（108–114） | 0/1 | panel_long |
 | `deaths` | 心臟疾病死亡人數（原發布，未乘轉換比值） | 人 | panel_long; town_mean; gpkg/shp |
 | `deaths_sum` | 心臟疾病 10 年死亡人數合計 | 人 | town_mean; gpkg/shp |
 | `pop` | 年中人口 | 人 | panel_long; town_mean; gpkg/shp |
@@ -87,12 +89,20 @@ towns <- merge(towns, subset(panel, year == 2025), by = "towncode")  # 例：接
 - 移除距臺灣本島 > 5 km 的島嶼部分（高雄市旗津區的東沙島與南沙太平島、宜蘭縣頭城鎮的龜山島與釣魚臺列嶼、基隆市中正區的彭佳嶼等、恆春鎮外礁），否則旗津區重心會落在南海。這些島沒有一般戶籍人口，不影響死亡資料。官方完整界線保留在 `data/interim/town_master.gpkg` 的 `town_master_official` 圖層。
 - 死因表只有中文名稱，以 `data/interim/town_name_lookup.csv` 對應 towncode；106 年表仍用舊名「員林鎮」「頭份鎮」（104 年升格為市），以改名對照處理。
 
-### 心臟疾病死亡率（`asmr_heart`, `deaths`, `pop`, `cmr_heart`）
+### 心臟疾病死亡率（`asmr_heart`, `deaths`, `pop`, `cmr_heart`, `cmr_adj`, `rule_chg`）
 - 來源：衛生福利部統計處[死因統計](https://dep.mohw.gov.tw/DOS/lp-5069-113.html)「縣市及鄉鎮統計表」105–114 年，各鄉鎮「主要死亡原因」工作表的「心臟疾病（高血壓性疾病除外）」列（ICD-10：I01-I02.0, I05-I09, I20-I25, I27, I30-I52）。
 - 鄉鎮表**直接提供標準化死亡率**；年中人口取自工作表附註。
 - **核對**：368 鄉鎮死亡數加總與衛福部公布的全國值（105、108–114 年）完全一致。
-- **108 年死因選取準則轉換**：108 年起改採 WHO 2016 年版 ICD-10 選取準則。衛福部只提供全國轉換比值，心臟疾病標準化死亡率為 **0.9162**（108–114 年死因統計結果分析附表 1）。`asmr_adj` = 105–107 年 × 0.9162，108–114 年不變；`asmr_heart` = `asmr_adj`。`deaths` 維持原發布整數。
-- `cmr_heart` = `deaths` / `pop` × 10⁵，所有年份自行計算。
+- **108 年死因選取準則轉換**：108 年起改採 WHO 2016 年版 ICD-10 選取準則。衛福部只提供全國轉換比值（108–114 年死因統計結果分析附表 1，7 年皆同）。心臟疾病（高血壓性疾病除外）：
+
+  | | 死亡人數 | 粗死亡率 | 標準化死亡率 |
+  |---|---|---|---|
+  | 轉換比值 | 0.9104 | 0.9104 | 0.9162 |
+
+  - `asmr_adj` = 105–107 年 × 0.9162，108–114 年不變；`asmr_heart` = `asmr_adj`。
+  - `cmr_heart` = `deaths` / `pop` × 10⁵（所有年份自行計算，未轉換）；`cmr_adj` = 105–107 年 `cmr_heart` × 0.9104，108–114 年不變。
+  - `deaths` 維持原發布整數，不乘轉換比值。
+  - `rule_chg` = 0（105–107）／1（108–114），可放進模型控制準則改變。
 
 ### PM2.5（`pm25`, `pm25_krig`）
 - 來源：環境部環境資料開放平臺 [空氣品質監測日平均值 AQX_P_19](https://data.moenv.gov.tw/dataset/detail/AQX_P_19)、[測站基本資料 AQX_P_07](https://data.moenv.gov.tw/dataset/detail/AQX_P_07)。萬里站（114/5/1 停止監測）不在現行測站資料中，座標依使用者提供（新北市萬里區瑪鋉路 221 號）。
@@ -148,8 +158,8 @@ towns <- merge(towns, subset(panel, year == 2025), by = "towncode")  # 例：接
 
 ## ⚠️ 限制與注意事項
 
-1. **108 年死因選取準則改變**：105–107 年已乘全國轉換比值 0.9162，但同一個全國值套用到所有鄉鎮，等於假設各地受準則改變的影響相同。可用 `asmr_raw` 搭配年份虛擬變數做敏感度分析。
-2. **112–114 年缺值不是隨機的**：被遮蔽的全是死亡數少的小鄉鎮（多為山區、原住民鄉鎮，ASMR 通常偏高），直接算這三年的平均會偏低。`town_mean` 中有 97 個鄉鎮的 ASMR 平均只用 7–9 年（看 `n_asmr`）。建議用 `cmr_heart`（10 年都有值）或 `deaths`、`pop` 自行建模做對照。
+1. **108 年死因選取準則改變**：105–107 年的 `asmr_adj`（× 0.9162）與 `cmr_adj`（× 0.9104）是用**全國**轉換比值回推，同一個值套用到所有鄉鎮，等於假設各地受準則改變的影響相同。`cmr_heart` 與 `asmr_raw` 是未轉換的原值，105–107 年和 108 年後**不可直接比較**。敏感度分析可改用原值（`asmr_raw` 或 `cmr_heart`）搭配 `rule_chg` 放進模型。`deaths` 也是原發布數，以 `deaths` 為結果變數時同樣建議加入 `rule_chg`。
+2. **112–114 年缺值不是隨機的**：被遮蔽的全是死亡數少的小鄉鎮（多為山區、原住民鄉鎮，ASMR 通常偏高），直接算這三年的平均會偏低。`town_mean` 中有 97 個鄉鎮的 ASMR 平均只用 7–9 年（看 `n_asmr`）。建議用 **`cmr_adj`**（10 年都有值，且已做準則轉換）或 `deaths`、`pop`（加 `rule_chg`）自行建模做對照。注意 `cmr_adj` 是粗率，沒有校正年齡結構，高齡化鄉鎮會偏高。
 3. **小鄉鎮死亡率不穩定**：deaths < 20 有 796 筆、< 5 有 70 筆，都照原值保留。例：臺東縣延平鄉 111 年 15 人死亡，ASMR 285.5。可考慮以 `deaths` 為結果變數、`pop` 為 offset 的 Poisson／負二項模型，或 Empirical Bayes 平滑。
 4. **PM2.5 是內插值，不是實測**：測站集中在平地與都市，中央山脈與東部山區幾乎沒有測站，那裡是外插結果，誤差可能大於 LOOCV RMSE。Kriging 的 LOOCV 比 IDW 好，可用 `pm25_krig` 做敏感度分析。
 5. **ERA5-Land 解析度約 9–11 km**：小鄉鎮常與鄰近鄉鎮落在同一格，鄉鎮間氣溫差異被平滑；9 個沿海鄉鎮是補值。

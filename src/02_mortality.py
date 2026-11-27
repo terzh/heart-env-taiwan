@@ -12,7 +12,9 @@
 - asmr_raw   原發布標準化死亡率（每十萬人口）
 - asmr_adj   105–107 年 = asmr_raw × 0.9162（全國轉換比值），108–114 年 = asmr_raw
 - asmr_heart = asmr_adj（主要分析變數）
-- cmr_heart  粗死亡率 = deaths / pop × 1e5（自行計算，112 年起遮蔽的鄉鎮也有值）
+- cmr_heart  粗死亡率 = deaths / pop × 1e5（自行計算、未轉換，112 年起遮蔽的鄉鎮也有值）
+- cmr_adj    105–107 年 = cmr_heart × 0.9104（全國粗死亡率轉換比值），108–114 年 = cmr_heart
+- rule_chg   死因選取準則：105–107 = 0（舊準則），108–114 = 1（WHO 2016 版）
 - f_asmr     0 正常；2 = asmr 被遮蔽（112 年起死亡數 < 20 以「*」呈現）→ NaN
 - 心臟疾病不在死因表、且表列死因 < 15 個（代表有死亡的死因已全部列出）→ deaths = 0、asmr = 0，f_asmr = 0
 """
@@ -33,6 +35,7 @@ HEART = "心臟疾病（高血壓性疾病除外）"
 HEART_ICD = "I01-I02.0, I05-I09, I20-I25, I27, I30-I52"
 # 衛福部 108 年起死因統計結果分析附表 1：心臟疾病（高血壓性疾病除外）全國轉換比值（適用 97–107 年原發布數）
 RATIO_ASMR = 0.9162
+RATIO_CMR = 0.9104  # 死亡人數與粗死亡率同一比值（108–114 年 7 份結果分析附表 1 皆同）
 RULE_CHANGE_YEAR = 108
 TOP_N = 15
 
@@ -112,10 +115,13 @@ def main():
     d["asmr_adj"] = np.where(d["roc_year"] < RULE_CHANGE_YEAR, d["asmr_raw"] * RATIO_ASMR, d["asmr_raw"])
     d["asmr_heart"] = d["asmr_adj"]
     d["cmr_heart"] = d["deaths"] / d["pop"] * 1e5
+    d["cmr_adj"] = np.where(d["roc_year"] < RULE_CHANGE_YEAR, d["cmr_heart"] * RATIO_CMR, d["cmr_heart"])
+    d["rule_chg"] = (d["roc_year"] >= RULE_CHANGE_YEAR).astype(int)
     d["f_asmr"] = np.where(d["asmr_heart"].isna(), 2, 0)
     d["deaths"] = d["deaths"].astype("Int64")
 
-    cols = ["towncode", "year", "roc_year", "asmr_heart", "asmr_raw", "asmr_adj", "deaths", "pop", "cmr_heart", "f_asmr"]
+    cols = ["towncode", "year", "roc_year", "asmr_heart", "asmr_raw", "asmr_adj", "deaths", "pop",
+            "cmr_heart", "cmr_adj", "rule_chg", "f_asmr"]
     out = d.sort_values(["towncode", "year"])[cols]
     assert len(out) == 349 * 10 and not out.duplicated(["towncode", "year"]).any()
     out.to_csv(INTERIM / "mortality.csv", index=False, encoding="utf-8-sig")
@@ -133,7 +139,7 @@ def main():
     print("\n數值摘要：")
     print(out[["asmr_heart", "asmr_raw", "deaths", "pop", "cmr_heart"]].describe().round(1).to_string())
     print("\n各年全國平均（本島鄉鎮簡單平均）：")
-    print(out.groupby("roc_year")[["asmr_raw", "asmr_heart", "cmr_heart"]].mean().round(1).to_string())
+    print(out.groupby("roc_year")[["asmr_raw", "asmr_heart", "cmr_heart", "cmr_adj", "rule_chg"]].mean().round(1).to_string())
     print("\ndeaths < 5 的鄉鎮-年：", int((out["deaths"] < 5).sum()), "；deaths < 20：", int((out["deaths"] < 20).sum()))
 
 

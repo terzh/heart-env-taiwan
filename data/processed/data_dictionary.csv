@@ -7,7 +7,9 @@ roc_year,民國年,年,,105–114,panel_long
 asmr_heart,心臟疾病（高血壓性疾病除外）年齡標準化死亡率，主要分析變數（= asmr_adj）,每十萬人口,衛福部統計處 死因統計 縣市及鄉鎮統計表,105–107 年 × 全國轉換比值 0.9162；112 年起死亡數 < 20 被遮蔽 → NaN；town_mean 為有值年份平均,panel_long; town_mean; gpkg/shp
 asmr_raw,原發布年齡標準化死亡率（未經 108 年準則轉換）,每十萬人口,同上,原值,panel_long; town_mean; gpkg/shp
 asmr_adj,經轉換比值調整後年齡標準化死亡率,每十萬人口,同上；轉換比值見 108–114 年死因統計結果分析附表 1,105–107 = asmr_raw × 0.9162；108–114 = asmr_raw,panel_long
-cmr_heart,心臟疾病粗死亡率（自行計算）,每十萬人口,同上,deaths / pop × 10⁵；所有年份皆有值,panel_long; town_mean; gpkg/shp
+cmr_heart,心臟疾病粗死亡率（自行計算，未經 108 年準則轉換）,每十萬人口,同上,deaths / pop × 10⁵；所有年份皆有值；105–107 與 108 年後不可直接比較,panel_long; town_mean; gpkg/shp
+cmr_adj,經轉換比值調整後心臟疾病粗死亡率,每十萬人口,同上；轉換比值見 108–114 年死因統計結果分析附表 1,105–107 = cmr_heart × 0.9104；108–114 = cmr_heart；所有年份皆有值,panel_long; town_mean; gpkg/shp
+rule_chg,死因選取準則虛擬變數：0 = 舊準則（105–107）、1 = WHO 2016 版（108–114）,0/1,,依年份產生,panel_long
 deaths,心臟疾病死亡人數（原發布，未乘轉換比值）,人,同上,town_mean 為 10 年平均,panel_long; town_mean; gpkg/shp
 deaths_sum,心臟疾病 10 年死亡人數合計,人,同上,,town_mean; gpkg/shp
 pop,年中人口,人,同上（工作表附註）,town_mean 為 10 年平均,panel_long; town_mean; gpkg/shp

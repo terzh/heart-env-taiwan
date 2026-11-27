@@ -35,7 +35,7 @@ N_TOWN, YEARS = 349, list(range(2016, 2026))
 PANEL_COLS = ["towncode", "county", "town", "year", "roc_year",
               "asmr_heart", "deaths", "pop", "pm25", "tmean", "ndvi",
               "f_asmr", "f_pm25", "f_tmean", "f_ndvi",
-              "asmr_raw", "asmr_adj", "cmr_heart", "pm25_krig"]
+              "asmr_raw", "asmr_adj", "cmr_heart", "cmr_adj", "rule_chg", "pm25_krig"]
 VARS = [("asmr_heart", "f_asmr"), ("pm25", "f_pm25"), ("tmean", "f_tmean"), ("ndvi", "f_ndvi")]
 LABEL = {"asmr_heart": "心臟疾病 ASMR（每十萬人）", "pm25": "PM2.5（μg/m³）",
          "tmean": "年均溫（°C）", "ndvi": "NDVI"}
@@ -71,7 +71,7 @@ def checks(p, sources):
     if p.duplicated(["towncode", "year"]).any():
         errs.append("有重複 (towncode, year)")
     # NaN 數必須與來源相同（沒有任何值被填補）
-    for col, src in [("asmr_heart", mort), ("deaths", mort), ("pop", mort), ("cmr_heart", mort),
+    for col, src in [("asmr_heart", mort), ("deaths", mort), ("pop", mort), ("cmr_heart", mort), ("cmr_adj", mort),
                      ("pm25", pm), ("pm25_krig", pm), ("tmean", cl), ("ndvi", cl)]:
         if p[col].isna().sum() != src[col].isna().sum():
             errs.append(f"{col} NaN 數與來源不同")
@@ -103,13 +103,13 @@ def missing_summary(p):
 
 def town_means(p):
     g = p.groupby("towncode")
-    m = g[["asmr_heart", "asmr_raw", "cmr_heart", "pop", "pm25", "pm25_krig", "tmean", "ndvi"]].mean()
+    m = g[["asmr_heart", "asmr_raw", "cmr_heart", "cmr_adj", "pop", "pm25", "pm25_krig", "tmean", "ndvi"]].mean()
     m["deaths"] = g["deaths"].mean()
     m["deaths_sum"] = g["deaths"].sum().astype(int)
     m["n_asmr"] = g["asmr_heart"].count()  # 有 ASMR 的年數（112–114 遮蔽者 < 10）
     m["n_flag1"] = g[["f_pm25", "f_tmean", "f_ndvi"]].apply(lambda d: int((d == 1).sum().sum()))
     m = m.reset_index().merge(p[["towncode", "county", "town"]].drop_duplicates(), on="towncode")
-    cols = ["towncode", "county", "town", "asmr_heart", "n_asmr", "asmr_raw", "cmr_heart", "deaths",
+    cols = ["towncode", "county", "town", "asmr_heart", "n_asmr", "asmr_raw", "cmr_heart", "cmr_adj", "deaths",
             "deaths_sum", "pop", "pm25", "pm25_krig", "tmean", "ndvi", "n_flag1"]
     m = m[cols].sort_values("towncode").reset_index(drop=True)
     assert all(len(c) <= 10 for c in m.columns)
@@ -128,7 +128,12 @@ DICT = [
     ("asmr_raw", "原發布年齡標準化死亡率（未經 108 年準則轉換）", "每十萬人口", "同上", "原值", "all"),
     ("asmr_adj", "經轉換比值調整後年齡標準化死亡率", "每十萬人口", "同上；轉換比值見 108–114 年死因統計結果分析附表 1",
      "105–107 = asmr_raw × 0.9162；108–114 = asmr_raw", "panel"),
-    ("cmr_heart", "心臟疾病粗死亡率（自行計算）", "每十萬人口", "同上", "deaths / pop × 10⁵；所有年份皆有值", "all"),
+    ("cmr_heart", "心臟疾病粗死亡率（自行計算，未經 108 年準則轉換）", "每十萬人口", "同上",
+     "deaths / pop × 10⁵；所有年份皆有值；105–107 與 108 年後不可直接比較", "all"),
+    ("cmr_adj", "經轉換比值調整後心臟疾病粗死亡率", "每十萬人口", "同上；轉換比值見 108–114 年死因統計結果分析附表 1",
+     "105–107 = cmr_heart × 0.9104；108–114 = cmr_heart；所有年份皆有值", "all"),
+    ("rule_chg", "死因選取準則虛擬變數：0 = 舊準則（105–107）、1 = WHO 2016 版（108–114）", "0/1", "",
+     "依年份產生", "panel"),
     ("deaths", "心臟疾病死亡人數（原發布，未乘轉換比值）", "人", "同上", "town_mean 為 10 年平均", "all"),
     ("deaths_sum", "心臟疾病 10 年死亡人數合計", "人", "同上", "", "mean"),
     ("pop", "年中人口", "人", "同上（工作表附註）", "town_mean 為 10 年平均", "all"),
