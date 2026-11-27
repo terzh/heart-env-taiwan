@@ -1,0 +1,19 @@
+name: heart-env-taiwan
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pandas
+  - geopandas
+  - rasterio
+  - rasterstats
+  - shapely
+  - pyproj
+  - scipy
+  - pykrige
+  - matplotlib
+  - openpyxl
+  - xlrd        # 讀衛福部 .xls（舊版 Excel）
+  - odfpy       # 讀 114 年起的 .ods
+  - pdfplumber  # 讀死因結果分析 pdf（找 108 年轉換比值）
+  - requests    # src/00_download_*.py

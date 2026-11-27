@@ -1,0 +1,23 @@
+﻿column,description_zh,unit,source,processing,files
+towncode,鄉鎮市區代碼（內政部 8 碼，字串，保留前導 0）,,國土測繪中心鄉鎮界 TOWN_MOI_1140318,合併鍵,panel_long; town_mean; gpkg/shp
+county,縣市名稱,,同上,,panel_long; town_mean; gpkg/shp
+town,鄉鎮市區名稱,,同上,,panel_long; town_mean; gpkg/shp
+year,西元年,年,,2016–2025,panel_long
+roc_year,民國年,年,,105–114,panel_long
+asmr_heart,心臟疾病（高血壓性疾病除外）年齡標準化死亡率，主要分析變數（= asmr_adj）,每十萬人口,衛福部統計處 死因統計 縣市及鄉鎮統計表,105–107 年 × 全國轉換比值 0.9162；112 年起死亡數 < 20 被遮蔽 → NaN；town_mean 為有值年份平均,panel_long; town_mean; gpkg/shp
+asmr_raw,原發布年齡標準化死亡率（未經 108 年準則轉換）,每十萬人口,同上,原值,panel_long; town_mean; gpkg/shp
+asmr_adj,經轉換比值調整後年齡標準化死亡率,每十萬人口,同上；轉換比值見 108–114 年死因統計結果分析附表 1,105–107 = asmr_raw × 0.9162；108–114 = asmr_raw,panel_long
+cmr_heart,心臟疾病粗死亡率（自行計算）,每十萬人口,同上,deaths / pop × 10⁵；所有年份皆有值,panel_long; town_mean; gpkg/shp
+deaths,心臟疾病死亡人數（原發布，未乘轉換比值）,人,同上,town_mean 為 10 年平均,panel_long; town_mean; gpkg/shp
+deaths_sum,心臟疾病 10 年死亡人數合計,人,同上,,town_mean; gpkg/shp
+pop,年中人口,人,同上（工作表附註）,town_mean 為 10 年平均,panel_long; town_mean; gpkg/shp
+n_asmr,有 asmr_heart 值的年數,年,,10 減去被遮蔽年數,town_mean; gpkg/shp
+pm25,PM2.5 年平均濃度（IDW 內插，主要）,μg/m³,環境部 空氣品質監測日平均值 aqx_p_19,測站有效日 ≥ 75% 才參與；1 km 網格 IDW (p=2) → 鄉鎮網格平均,panel_long; town_mean; gpkg/shp
+pm25_krig,PM2.5 年平均濃度（Ordinary Kriging，比較用）,μg/m³,同上,spherical variogram；1 km 網格 → 鄉鎮網格平均；LOOCV RMSE 低於 IDW,panel_long; town_mean; gpkg/shp
+tmean,年平均氣溫,°C,"ERA5-Land monthly（GEE ECMWF/ERA5_LAND/MONTHLY_AGGR, temperature_2m）",12 個月平均，K → °C；reduceRegions mean scale 1 km；9 個沿海鄉鎮以 20 km 內陸地網格補值（f_tmean = 1）,panel_long; town_mean; gpkg/shp
+ndvi,年平均 NDVI,無單位（−1～1）,MODIS MOD13Q1 v061（GEE MODIS/061/MOD13Q1）,× 0.0001；SummaryQA good 像元年平均，整年無 good 則放寬 good+marginal（f_ndvi = 1）；scale 250 m,panel_long; town_mean; gpkg/shp
+f_asmr,asmr_heart 旗標：0 正常、2 缺值（112 年起遮蔽「*」）,代碼,,見 docs/processing_log.md,panel_long
+f_pm25,pm25 旗標：0 正常、1 替代方法（all_touched／重心網格）、2 缺值,代碼,,,panel_long
+f_tmean,tmean 旗標：0 正常、1 替代方法（buffer／最近陸地網格）、2 缺值,代碼,,,panel_long
+f_ndvi,ndvi 旗標：0 正常、1 替代方法（good+marginal／buffer）、2 缺值,代碼,,,panel_long
+n_flag1,10 年中 pm25、tmean、ndvi 旗標為 1 的筆數合計,筆,,,town_mean; gpkg/shp

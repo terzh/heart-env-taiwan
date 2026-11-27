@@ -1,0 +1,13 @@
+# data/ 全部進 git（raw、interim、processed；使用者決定 2026-11-28）
+
+# 機密（環境部 API key 只放在 ~/.moenv_key，不進 repo）
+.env
+*.key
+.moenv_key
+
+# Python / 系統
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+.claude/settings.local.json
